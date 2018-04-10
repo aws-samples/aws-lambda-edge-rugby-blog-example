@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template sets up the CloudFront and S3 buckets for the AWS Lambda@Edge Rugby Compute Blog article
+Resources:
+  RugbyDataBucket:
+    Type: AWS::S3::Bucket
+  RugbyDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref RugbyDataBucket
+      PolicyDocument:
+        Statement:
+          - Sid: RugbyDataS3BucketPolicy
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref RugbyDataBucket, '/*']]
+  RugbyCloudFrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig: 
+        Origins:
+          - DomainName: !GetAtt RugbyDataBucket.DomainName
+            Id: rugbyDataBucketDistroConfig
+            S3OriginConfig: {}
+        Enabled: True
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: True
+          TargetOriginId: rugbyDataBucketDistroConfig
+          ViewerProtocolPolicy: redirect-to-https
+Outputs:
+  RugbyBucket:
+    Value: !Ref RugbyDataBucket
+  RugbyDistro:
+    Value: !Ref RugbyCloudFrontDistribution
+  RugbyDomain:
+    Value: !GetAtt RugbyCloudFrontDistribution.DomainName

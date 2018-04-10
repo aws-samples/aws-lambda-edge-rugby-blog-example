@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates the base lambda@edge function and deploys it. It does not deploy it to the edge.
+Resources:
+  RugbyOriginRequestEdgeaLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - edgelambda.amazonaws.com
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+      - "arn:aws:iam::aws:policy/AWSLambdaExecute"
+  RugbyOriginRequestEdge:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: 
+        ZipFile: !Sub |
+          var AWS = require('aws-sdk');
+          const querystring = require('querystring');
+
+          exports.handler = (event, context, callback) => {
+              // This is how the request data is passed into the Lambda@Edge function
+              var request = event.Records[0].cf.request;
+              const qs = querystring.parse(request.querystring);
+              
+              if(qs.tables != 'current') {
+                  // There's no need to process so pass through as a normal request to S3.
+                  // Example: Additionally we can add a cache control header 
+                  // to avoid caching the response if we want here (good for debugging)
+                  request.headers["cache-control"] = [ 
+                      { 
+                          "key": "Cache-Control", 
+                          "value": "max-age=0" // expire it immediately
+                      } 
+                  ];
+                  callback(null, request);
+              } else {
+                  // TODO: Processing to create the JSON with the tables
+              }
+          };
+      Handler: index.handler
+      Role:
+        Fn::GetAtt: 
+        - RugbyOriginRequestEdgeaLambdaExecutionRole
+        - "Arn"
+      Runtime: "nodejs6.10"
+
+Outputs:
+  RugbyEdgeLambda:
+    Value: !Ref RugbyOriginRequestEdge
+  RugbyEdgeLambdaARN:
+    Value: !GetAtt RugbyOriginRequestEdge.Arn 
