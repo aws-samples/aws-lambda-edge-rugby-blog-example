@@ -24,6 +24,12 @@ Resources:
             Id: rugbyDataBucketDistroConfig
             S3OriginConfig: {}
         Enabled: True
+        CacheBehaviors:
+          - PathPattern: 'rugby_data.json'
+            ForwardedValues:
+              QueryString: True
+            TargetOriginId: rugbyDataBucketDistroConfig
+            ViewerProtocolPolicy: redirect-to-https
         DefaultCacheBehavior:
           ForwardedValues:
             QueryString: True
