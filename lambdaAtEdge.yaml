@@ -51,7 +51,7 @@ Resources:
         Fn::GetAtt: 
         - RugbyOriginRequestEdgeaLambdaExecutionRole
         - "Arn"
-      Runtime: "nodejs6.10"
+      Runtime: "nodejs10.x"
 
 Outputs:
   RugbyEdgeLambda:
